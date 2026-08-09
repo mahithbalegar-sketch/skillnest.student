@@ -290,33 +290,42 @@ elif st.session_state.current_page == "teacher_dashboard":
     st.markdown("""
         <div class="header-card" style="background: linear-gradient(135deg, #744210 0%, #d69e2e 100%);">
             <h1>👨‍🏫 Teacher Administration Portal (₹50/month Subscription)</h1>
-            <p>Publish live class schedules, manage Google Meet links, and review student test scores</p>
+            <p>Select the specific grade, subject, and publish timetable slots for live Google Meet classes</p>
         </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("📢 Publish Live Class Slot (Broadcasts Notification to All Students)")
+    st.subheader("📢 Publish Live Timetable Slot (Select Specific Grade & Subject)")
     with st.form("slot_publish_form"):
         c1, c2 = st.columns(2)
         with c1:
-            pub_date = st.date_input("Class Date")
+            pub_grade = st.selectbox("Select Target Grade", [
+                "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"
+            ])
+            pub_subject = st.selectbox("Select Subject", [
+                "Hindi", "Mathematics", "Telugu", "English", "General Science", "Social Studies"
+            ])
         with c2:
-            pub_time = st.selectbox("Class Time Slot (4 PM - 9 PM)", [
+            pub_date = st.date_input("Class Date")
+            pub_time = st.selectbox("Time Slot", [
                 "04:00 PM - 05:00 PM",
                 "05:00 PM - 06:00 PM",
                 "06:00 PM - 07:00 PM",
                 "07:00 PM - 08:00 PM",
                 "08:00 PM - 09:00 PM"
             ])
-        pub_topic = st.text_input("Class Topic / Title", "AP Syllabus Chapter Review")
-        submit_slot = st.form_submit_button("Publish Slot & Notify All Students")
+        
+        pub_topic = st.text_input("Class Topic / Title", "AP Syllabus Chapter Live Session")
+        submit_slot = st.form_submit_button("Publish Timetable Slot & Notify Students")
 
         if submit_slot:
             st.session_state.active_slots.append({
+                "grade": pub_grade,
                 "date": str(pub_date),
                 "time": pub_time,
+                "subject": pub_subject,
                 "topic": pub_topic
             })
-            st.success("Slot successfully published! Notification broadcasted to all students.")
+            st.success(f"Timetable slot for **{pub_grade} — {pub_subject}** successfully published!")
 
     st.divider()
 
@@ -356,7 +365,7 @@ elif st.session_state.current_page == "dashboard":
     if st.session_state.plan == "Premium":
         student_nav = st.sidebar.radio("Navigate Sections:", [
             "📖 Handbook & Chapters", 
-            "📅 Live Google Meet Classes (Notifications)", 
+            "📅 Live Timetable & Classes", 
             "📝 20-Q Quiz & Test Builder"
         ])
     else:
@@ -393,24 +402,27 @@ elif st.session_state.current_page == "dashboard":
             with st.expander(ch["ch"]):
                 st.write(ch["notes"])
 
-    # SECTION 2: LIVE GOOGLE MEET CLASSES & NOTIFICATIONS (Premium Only)
-    elif student_nav == "📅 Live Google Meet Classes (Notifications)":
-        st.markdown("""
+    # SECTION 2: LIVE GOOGLE MEET CLASSES & TIMETABLE (Premium Only)
+    elif student_nav == "📅 Live Timetable & Classes":
+        st.markdown(f"""
             <div class="header-card">
-                <h1>📅 Live Google Meet Class Notifications</h1>
-                <p>View scheduled slots published by your teacher and join the live room</p>
+                <h1>📅 Live Timetable & Google Meet Classes</h1>
+                <p>Viewing scheduled sessions for your class: <b>{st.session_state.grade}</b></p>
             </div>
         """, unsafe_allow_html=True)
 
-        if not st.session_state.active_slots:
-            st.info("No active live classes published by the teacher yet. Check back soon!")
+        # Filter slots to only show classes intended for the student's specific grade
+        grade_slots = [s for s in st.session_state.active_slots if s['grade'] == st.session_state.grade]
+
+        if not grade_slots:
+            st.info(f"No active live timetable slots published for **{st.session_state.grade}** yet. Check back soon!")
         else:
-            st.success("🔔 **New Announcement:** Your teacher has scheduled the following live classes!")
-            for slot in st.session_state.active_slots:
+            st.success(f"🔔 **Timetable Announcement:** Active live classes scheduled for **{st.session_state.grade}**:")
+            for slot in grade_slots:
                 st.markdown(f"""
                     <div style="background: #e6fffa; border-left: 5px solid #319795; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                        <h3>📌 {slot['topic']}</h3>
-                        <p><b>Date:</b> {slot['date']} &nbsp;|&nbsp; <b>Time:</b> {slot['time']}</p>
+                        <h3>📚 Subject: {slot['subject']} — {slot['topic']}</h3>
+                        <p><b>Grade:</b> {slot['grade']} &nbsp;|&nbsp; <b>Date:</b> {slot['date']} &nbsp;|&nbsp; <b>Time:</b> {slot['time']}</p>
                         <a href="{st.session_state.meet_link}" target="_blank" style="font-size: 16px; font-weight: bold; color: #2b6cb0;">🔗 Click Here to Join Google Meet Room</a>
                     </div>
                 """, unsafe_allow_html=True)
